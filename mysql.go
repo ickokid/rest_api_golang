@@ -1,16 +1,23 @@
 package main
 
-import "fmt"
-import "log"
-import "database/sql"
-import _ "github.com/go-sql-driver/mysql"
+import (
+	"database/sql"
+	"fmt"
+	"log"
 
-import "net/http"
-import "encoding/json"
-import "github.com/gorilla/mux"
-import "strconv"
+	"encoding/json"
+	"net/http"
+	"os"
+	"strconv"
 
-import . "rest-api/models" //use "."" if without call model like models.Student / models.Response
+	_ "github.com/go-sql-driver/mysql"
+	"github.com/gorilla/mux"
+	"github.com/joho/godotenv"
+
+	. "rest-api/models"
+)
+
+//use "."" if without call model like models.Student / models.Response
 
 /*type Student struct {
 	Id    int64  `json:"id"`
@@ -39,6 +46,16 @@ func handleError(err error) {
 }
 
 func connect() (*sql.DB, error) {
+	err := godotenv.Load("config.env")
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
+	DB_HOST := os.Getenv("DB_HOST_MYSQL")
+	DB_USER := os.Getenv("DB_USER_MYSQL")
+	DB_PASSWORD := os.Getenv("DB_PASSWORD_MYSQL")
+	DB_DATABASE := os.Getenv("DB_DATABASE_MYSQL")
+
 	//db, err := sql.Open("mysql", "root:root@tcp(localhost:3307)/db_belajar_golang")
 	db, err := sql.Open("mysql", fmt.Sprintf("%s:%s@tcp(%s)/%s", DB_USER, DB_PASSWORD, DB_HOST, DB_DATABASE))
 	if err != nil {

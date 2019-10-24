@@ -2,13 +2,6 @@ package models
 
 import "gopkg.in/mgo.v2/bson"
 
-const (
-	DB_HOST     = string("localhost:3307")
-	DB_USER     = string("root")
-	DB_PASSWORD = string("root")
-	DB_DATABASE = string("db_belajar_golang")
-)
-
 type Student struct {
 	Id    int64  `json:"id"`
 	Name  string `json:"name"`
@@ -22,9 +15,6 @@ type Response struct {
 }
 
 const (
-	DB_HOST_MONGO     = string("localhost:27017") //mongodb://127.0.0.1:27017
-	DB_USER_MONGO     = string("golang")
-	DB_PASSWORD_MONGO = string("golang123")
 	DB_DATABASE_MONGO = string("belajar_golang")
 )
 

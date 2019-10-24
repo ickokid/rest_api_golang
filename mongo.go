@@ -1,17 +1,25 @@
 package main
 
-import "fmt"
-import "gopkg.in/mgo.v2"
-import "gopkg.in/mgo.v2/bson"
-import "time"
+import (
+	"encoding/json"
+	"fmt"
+	"log"
+	"net/http"
+	"os"
+	"strconv"
+	"time"
 
-import "log"
-import "net/http"
-import "encoding/json"
-import "github.com/gorilla/mux"
-import "strconv"
+	"github.com/gorilla/mux"
+	"github.com/joho/godotenv"
+	"gopkg.in/mgo.v2"
+	"gopkg.in/mgo.v2/bson"
 
-import . "rest-api/models" //use "."" if without call model like models.Student_Mongo / models.Response_Mongo
+	. "rest-api/models"
+)
+
+//use "."" if without call model like models.Student_Mongo / models.Response_Mongo
+
+var DB_DATABASE string
 
 func handleError(err error) {
 	if err != nil {
@@ -21,14 +29,23 @@ func handleError(err error) {
 }
 
 func connect() (*mgo.Session, error) {
+	err := godotenv.Load("config.env")
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
+
+	DB_HOST := os.Getenv("DB_HOST_MONGO")
+	DB_USER := os.Getenv("DB_USER_MONGO")
+	DB_PASSWORD := os.Getenv("DB_PASSWORD_MONGO")
+
 	//var session, err = mgo.Dial("mongodb://golang:golang123@localhost/belajar_golang")
 	//var session, err = mgo.Dial("localhost:27017")
 	info := &mgo.DialInfo{
-		Addrs:     []string{DB_HOST_MONGO},
+		Addrs:     []string{DB_HOST},
 		Timeout:   5 * time.Second,
 		Database:  DB_DATABASE_MONGO,
-		Username:  DB_USER_MONGO,
-		Password:  DB_PASSWORD_MONGO,
+		Username:  DB_USER,
+		Password:  DB_PASSWORD,
 		Mechanism: "SCRAM-SHA-1",
 	}
 	session, err := mgo.DialWithInfo(info)

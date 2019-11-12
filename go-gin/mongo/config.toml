@@ -1,0 +1,7 @@
+mongo_host = "localhost"
+mongo_addrs = ["localhost:27017"]
+mongo_database = "belajar_golang"
+mongo_username = "golang"
+mongo_password = "golang123"
+gin_mode = "debug"
+gin_port = "8080"

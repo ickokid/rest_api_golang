@@ -1,33 +1,18 @@
 package controllers
 
 import (
-	"rest-api-gin-mongo/db"
-
 	"net/http"
 
 	"github.com/gin-gonic/gin"
 	"gopkg.in/mgo.v2/bson"
+
+	"rest-api-gin-mongo/models"
 )
-
-const (
-	CollectionInstruction = "instruction"
-)
-
-type Instruction struct {
-	Id          bson.ObjectId `json:"id,omitempty" bson:"_id,omitempty"`
-	EventStatus string        `json:"event_status" bson:"event_status"`
-	EventName   string        `json:"event_name" bson:"event_name"`
-}
-
-var dbConnect = db.NewConnection()
 
 func GetInstructions(c *gin.Context) {
-	var instructions []Instruction
 	var result gin.H
-	var selector = bson.M{}
 
-	var collection = dbConnect.Use("belajar_golang", CollectionInstruction)
-	err := collection.Find(selector).All(&instructions)
+	instructions, err := models.FindAll(0, 5)
 
 	if err == nil {
 		if len(instructions) <= 0 {
@@ -46,7 +31,7 @@ func GetInstructions(c *gin.Context) {
 	} else {
 		result = gin.H{
 			"status": 404,
-			"error":  "no instruction(s) into the table",
+			"error":  "No instruction(s) into the table",
 		}
 	}
 
@@ -57,35 +42,27 @@ func GetInstructions(c *gin.Context) {
 
 func GetInstruction(c *gin.Context) {
 	id := c.Param("id")
-	var instruction Instruction
 	var result gin.H
 
 	if bson.IsObjectIdHex(id) {
-		var collection = dbConnect.Use("belajar_golang", CollectionInstruction)
-		err := collection.FindId(bson.ObjectIdHex(id)).Select(bson.M{"_id": 1, "event_status": 1, "event_name": 1}).One(&instruction)
+		instructions, err := models.FindById(id)
 
 		if err == nil {
-			content := &Instruction{
-				Id:          bson.ObjectIdHex(id),
-				EventStatus: instruction.EventStatus,
-				EventName:   instruction.EventName,
-			}
-
 			result = gin.H{
 				"status": 200,
-				"data":   content,
+				"data":   instructions,
 				"count":  1,
 			}
 		} else {
 			result = gin.H{
 				"status": 404,
-				"error":  "instruction not found",
+				"error":  "Instruction not found",
 			}
 		}
 	} else {
 		result = gin.H{
 			"status": 404,
-			"error":  "invalif format",
+			"error":  "Invalid format",
 		}
 	}
 
@@ -95,25 +72,19 @@ func GetInstruction(c *gin.Context) {
 }
 
 func PostInstruction(c *gin.Context) {
-	var instruction Instruction
+	var instruction models.Instruction
 	var result gin.H
-	c.Bind(&instruction)
+	errs := c.Bind(&instruction)
 
-	if instruction.EventStatus != "" && instruction.EventName != "" {
-		var collection = dbConnect.Use("belajar_golang", CollectionInstruction)
+	if errs == nil {
 		instruction_id := bson.NewObjectId()
-		err := collection.Insert(&Instruction{instruction_id, instruction.EventStatus, instruction.EventName})
+
+		instructions, err := models.Insert(instruction_id, instruction.EventStatus, instruction.EventName)
 
 		if err == nil {
-			content := &Instruction{
-				Id:          instruction_id,
-				EventStatus: instruction.EventStatus,
-				EventName:   instruction.EventName,
-			}
-
 			result = gin.H{
 				"status": 200,
-				"data":   content,
+				"data":   instructions,
 			}
 		} else {
 			result = gin.H{
@@ -124,7 +95,7 @@ func PostInstruction(c *gin.Context) {
 	} else {
 		result = gin.H{
 			"status": 400,
-			"error":  "fields are empty",
+			"error":  errs.Error(),
 		}
 	}
 
@@ -135,30 +106,23 @@ func PostInstruction(c *gin.Context) {
 
 func UpdateInstruction(c *gin.Context) {
 	id := c.Params.ByName("id")
-	var instruction Instruction
 	var result gin.H
 
 	if bson.IsObjectIdHex(id) {
-		var collection = dbConnect.Use("belajar_golang", CollectionInstruction)
-		err := collection.FindId(bson.ObjectIdHex(id)).Select(bson.M{"_id": 1, "event_status": 1, "event_name": 1}).One(&instruction)
+		_, err := models.FindById(id)
 
 		if err == nil {
-			var json Instruction
-			c.Bind(&json)
-			instruction := Instruction{
-				Id:          bson.ObjectIdHex(id),
-				EventStatus: json.EventStatus,
-				EventName:   json.EventName,
-			}
+			var instruction models.Instruction
 
-			if instruction.EventStatus != "" && instruction.EventName != "" {
-				var selector = bson.M{"_id": bson.ObjectIdHex(id)}
-				err := collection.Update(selector, &instruction)
+			errs := c.Bind(&instruction)
+
+			if errs == nil {
+				instructions, err := models.Update(id, instruction.EventStatus, instruction.EventName)
 
 				if err == nil {
 					result = gin.H{
 						"status": 200,
-						"data":   instruction,
+						"data":   instructions,
 					}
 				} else {
 					result = gin.H{
@@ -169,38 +133,36 @@ func UpdateInstruction(c *gin.Context) {
 			} else {
 				result = gin.H{
 					"status": 400,
-					"error":  "fields are empty",
+					"error":  "Fields are empty",
 				}
 			}
 		} else {
 			result = gin.H{
 				"status": 404,
-				"error":  "instruction not found",
+				"error":  "Instruction not found",
 			}
 		}
 	} else {
 		result = gin.H{
 			"status": 404,
-			"error":  "invalif format",
+			"error":  "Invalid format",
 		}
 	}
 
 	c.JSON(http.StatusOK, result)
+
 	// curl -i -X PUT -H "Content-Type: application/json" -d "{ \"event_status\": \"83\", \"event_name\": \"100\" }" http://localhost:8080/api/v1/instructions/1
 }
 
 func DeleteInstruction(c *gin.Context) {
 	id := c.Params.ByName("id")
-	var instruction Instruction
 	var result gin.H
 
 	if bson.IsObjectIdHex(id) {
-		var collection = dbConnect.Use("belajar_golang", CollectionInstruction)
-		err := collection.FindId(bson.ObjectIdHex(id)).Select(bson.M{"_id": 1, "event_status": 1, "event_name": 1}).One(&instruction)
+		_, err := models.FindById(id)
 
 		if err == nil {
-			var selector = bson.M{"_id": bson.ObjectIdHex(id)}
-			err := collection.Remove(selector)
+			err := models.Delete(id)
 
 			if err == nil {
 				result = gin.H{
@@ -216,13 +178,13 @@ func DeleteInstruction(c *gin.Context) {
 		} else {
 			result = gin.H{
 				"status": 404,
-				"error":  "instruction not found",
+				"error":  "Instruction not found",
 			}
 		}
 	} else {
 		result = gin.H{
 			"status": 404,
-			"error":  "invalif format",
+			"error":  "Invalid format",
 		}
 	}
 

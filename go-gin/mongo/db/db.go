@@ -2,10 +2,8 @@ package db
 
 import (
 	"log"
-	"os"
 	"time"
 
-	"github.com/joho/godotenv"
 	"gopkg.in/mgo.v2"
 )
 
@@ -13,24 +11,20 @@ type DBConnection struct {
 	session *mgo.Session
 }
 
-func NewConnection() (conn *DBConnection) {
-	err := godotenv.Load("config.env")
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
+var (
+	config = Config{}
+)
 
-	DB_HOST := os.Getenv("DB_HOST_MONGO")
-	DB_USER := os.Getenv("DB_USER_MONGO")
-	DB_PASSWORD := os.Getenv("DB_PASSWORD_MONGO")
-	DB_DATABASE := os.Getenv("DB_DATABASE_MONGO")
+func NewConnection() (conn *DBConnection) {
+	config.Read("config.toml")
 
 	//var session, err := mgo.Dial("mongodb://golang:golang123@localhost/belajar_golang")
 	info := &mgo.DialInfo{
-		Addrs:     []string{DB_HOST},
-		Timeout:   5 * time.Second,
-		Database:  DB_DATABASE,
-		Username:  DB_USER,
-		Password:  DB_PASSWORD,
+		Addrs:     config.Mongo_addrs,
+		Timeout:   60 * time.Second,
+		Database:  config.Mongo_database,
+		Username:  config.Mongo_username,
+		Password:  config.Mongo_password,
 		Mechanism: "SCRAM-SHA-1",
 	}
 	session, err := mgo.DialWithInfo(info)
@@ -40,8 +34,10 @@ func NewConnection() (conn *DBConnection) {
 	return conn
 }
 
-func (conn *DBConnection) Use(dbName, tableName string) (collection *mgo.Collection) {
-	return conn.session.DB(dbName).C(tableName)
+func (conn *DBConnection) Use(tableName string) (collection *mgo.Collection) {
+	config.Read("config.toml")
+
+	return conn.session.DB(config.Mongo_database).C(tableName)
 
 }
 

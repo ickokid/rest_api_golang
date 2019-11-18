@@ -1,79 +1,49 @@
 package controllers
 
 import (
-	"net/http"
-
 	"github.com/gin-gonic/gin"
 	"gopkg.in/mgo.v2/bson"
 
 	"rest-api-gin-mongo/models"
+	"rest-api-gin-mongo/utils"
 )
 
 func GetInstructions(c *gin.Context) {
-	var result gin.H
-
 	instructions, err := models.FindAll(0, 5)
 
 	if err == nil {
 		if len(instructions) <= 0 {
-			result = gin.H{
-				"status": 200,
-				"data":   nil,
-				"count":  0,
-			}
+			utils.Success(c, nil)
 		} else {
-			result = gin.H{
-				"status": 200,
-				"data":   instructions,
-				"count":  len(instructions),
-			}
+			utils.Success(c, instructions)
 		}
 	} else {
-		result = gin.H{
-			"status": 404,
-			"error":  "No instruction(s) into the table",
-		}
+		utils.NotFound(c)
 	}
-
-	c.JSON(http.StatusOK, result)
 
 	// curl -i http://localhost:8080/api/v1/instructions
 }
 
 func GetInstruction(c *gin.Context) {
 	id := c.Param("id")
-	var result gin.H
 
 	if bson.IsObjectIdHex(id) {
 		instructions, err := models.FindById(id)
 
 		if err == nil {
-			result = gin.H{
-				"status": 200,
-				"data":   instructions,
-				"count":  1,
-			}
+			utils.Success(c, instructions)
 		} else {
-			result = gin.H{
-				"status": 404,
-				"error":  "Instruction not found",
-			}
+			utils.NotFound(c)
 		}
 	} else {
-		result = gin.H{
-			"status": 404,
-			"error":  "Invalid format",
-		}
+		utils.BadRequest(c, "Invalid format")
 	}
-
-	c.JSON(http.StatusOK, result)
 
 	// curl -i http://localhost:8080/api/v1/Instructions/1
 }
 
 func PostInstruction(c *gin.Context) {
 	var instruction models.Instruction
-	var result gin.H
 	errs := c.Bind(&instruction)
 
 	if errs == nil {
@@ -82,31 +52,19 @@ func PostInstruction(c *gin.Context) {
 		instructions, err := models.Insert(instruction_id, instruction.EventStatus, instruction.EventName)
 
 		if err == nil {
-			result = gin.H{
-				"status": 200,
-				"data":   instructions,
-			}
+			utils.Success(c, instructions)
 		} else {
-			result = gin.H{
-				"status": 400,
-				"error":  "Insert failed",
-			}
+			utils.InternalError(c, "Insert failed", err)
 		}
 	} else {
-		result = gin.H{
-			"status": 400,
-			"error":  errs.Error(),
-		}
+		utils.BadRequest(c, "Parameters in complete") //errs.Error()
 	}
-
-	c.JSON(http.StatusOK, result)
 
 	// curl -i -X POST -H "Content-Type: application/json" -d "{ \"event_status\": \"83\", \"event_name\": \"100\" }" http://localhost:8080/api/v1/instructions
 }
 
 func UpdateInstruction(c *gin.Context) {
 	id := c.Params.ByName("id")
-	var result gin.H
 
 	if bson.IsObjectIdHex(id) {
 		_, err := models.FindById(id)
@@ -120,43 +78,25 @@ func UpdateInstruction(c *gin.Context) {
 				instructions, err := models.Update(id, instruction.EventStatus, instruction.EventName)
 
 				if err == nil {
-					result = gin.H{
-						"status": 200,
-						"data":   instructions,
-					}
+					utils.Success(c, instructions)
 				} else {
-					result = gin.H{
-						"status": 400,
-						"error":  "Updated failed",
-					}
+					utils.InternalError(c, "Updated failed", err)
 				}
 			} else {
-				result = gin.H{
-					"status": 400,
-					"error":  "Fields are empty",
-				}
+				utils.BadRequest(c, "Parameters in complete")
 			}
 		} else {
-			result = gin.H{
-				"status": 404,
-				"error":  "Instruction not found",
-			}
+			utils.NotFound(c)
 		}
 	} else {
-		result = gin.H{
-			"status": 404,
-			"error":  "Invalid format",
-		}
+		utils.BadRequest(c, "Invalid format")
 	}
-
-	c.JSON(http.StatusOK, result)
 
 	// curl -i -X PUT -H "Content-Type: application/json" -d "{ \"event_status\": \"83\", \"event_name\": \"100\" }" http://localhost:8080/api/v1/instructions/1
 }
 
 func DeleteInstruction(c *gin.Context) {
 	id := c.Params.ByName("id")
-	var result gin.H
 
 	if bson.IsObjectIdHex(id) {
 		_, err := models.FindById(id)
@@ -165,30 +105,16 @@ func DeleteInstruction(c *gin.Context) {
 			err := models.Delete(id)
 
 			if err == nil {
-				result = gin.H{
-					"status": 200,
-					"desc":   "id #" + id + " deleted",
-				}
+				utils.Success(c, nil)
 			} else {
-				result = gin.H{
-					"status": 400,
-					"error":  "Delete failed",
-				}
+				utils.InternalError(c, "Delete failed", err)
 			}
 		} else {
-			result = gin.H{
-				"status": 404,
-				"error":  "Instruction not found",
-			}
+			utils.NotFound(c)
 		}
 	} else {
-		result = gin.H{
-			"status": 404,
-			"error":  "Invalid format",
-		}
+		utils.BadRequest(c, "Invalid format")
 	}
-
-	c.JSON(http.StatusOK, result)
 
 	// curl -i -X DELETE http://localhost:8080/api/v1/instructions/1
 }

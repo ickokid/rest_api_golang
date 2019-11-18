@@ -14,6 +14,7 @@ type Config struct {
 	Mongo_password string
 	Gin_mode       string
 	Gin_port       string
+	Key            string
 }
 
 func (c *Config) Read(configFile string) {
